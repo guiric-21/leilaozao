@@ -11,7 +11,7 @@ public class Leilao {
     String vencedor;
     List<Lance> historico;
     boolean ativo;
-    long tempoFim; // momento em que o leilao encerra (em milissegundos)
+    long tempoFim;
 
     static final long DURACAO = 3 * 60 * 1000; // 3 minutos em milissegundos
 
@@ -28,18 +28,13 @@ public class Leilao {
     // Tenta registrar um lance. Retorna true se aceito, false se recusado.
     // "synchronized" = apenas um cliente por vez pode dar lance (evita conflito)
     public synchronized boolean darLance(String participante, double valor) {
-        // Verifica se o leilao ainda esta no prazo
         if (System.currentTimeMillis() > tempoFim) {
             ativo = false;
             return false;
         }
-
-        // O lance precisa ser maior que o atual
         if (valor <= maiorLance) {
             return false;
         }
-
-        // Aceita o lance
         maiorLance = valor;
         vencedor = participante;
         historico.add(new Lance(participante, valor));
@@ -48,16 +43,14 @@ public class Leilao {
 
     // Retorna um resumo do leilao em texto
     public synchronized String status() {
-        // Calcula quantos segundos faltam
-        long segundosRestantes = (tempoFim - System.currentTimeMillis()) / 1000;
-        if (segundosRestantes < 0) segundosRestantes = 0;
-
-        return "=== Leilao #" + id + " ===" +
-               "\nItem: " + item +
-               "\nMaior lance: R$ " + maiorLance +
-               "\nVencedor atual: " + vencedor +
-               "\nTempo restante: " + segundosRestantes + "s" +
-               "\nStatus: " + (ativo ? "ATIVO" : "ENCERRADO");
+        long seg = (tempoFim - System.currentTimeMillis()) / 1000;
+        if (seg < 0) seg = 0;
+        return "--- Leilao #" + id + " ---\n"
+             + "Item: " + item + "\n"
+             + "Maior lance: R$ " + maiorLance + "\n"
+             + "Vencedor: " + vencedor + "\n"
+             + "Tempo restante: " + seg + "s\n"
+             + "Status: " + (ativo ? "ATIVO" : "ENCERRADO");
     }
 
     public synchronized boolean estaAtivo() {
