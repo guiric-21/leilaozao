@@ -2,8 +2,8 @@ import java.io.*;
 import java.net.Socket;
 import java.util.List;
 
-// Responsavel por conversar com UM cliente conectado
-// Roda em uma thread separada para cada cliente (permite multiplos simultaneos)
+// Responsavel por conversar com um cliente conectado
+// Roda em uma thread separada para cada cliente (permite multiplos simultaneos), Transparência de Localização pois o usuario não sabe quantas threads estão rodando
 public class ManipuladorCliente implements Runnable {
 
     Socket socket;
@@ -11,6 +11,7 @@ public class ManipuladorCliente implements Runnable {
     List<ManipuladorCliente> clientesConectados;
     String nomeCliente;
     PrintWriter saida;
+    BufferedReader entrada;
 
     public ManipuladorCliente(Socket socket, List<Leilao> leiloes, List<ManipuladorCliente> clientesConectados) {
         this.socket = socket;
@@ -20,15 +21,15 @@ public class ManipuladorCliente implements Runnable {
 
     public void run() {
         try {
-            BufferedReader entrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            entrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             saida = new PrintWriter(socket.getOutputStream(), true);
 
             println("==================================");
             println("   BEM-VINDO AO LEILAO SD!");
             println("==================================");
             println("Digite seu nome:");
-            nomeCliente = entrada.readLine();
-            if (nomeCliente == null) return;
+            nomeCliente = ler();
+            if (nomeCliente == null || nomeCliente.isEmpty()) return;
 
             println("Ola, " + nomeCliente + "!");
 
@@ -41,24 +42,30 @@ public class ManipuladorCliente implements Runnable {
 
                 mostrarMenu();
 
-                String linha = entrada.readLine();
-                if (linha == null || linha.trim().equals("sair")) {
+                String linha = ler();
+                if (linha == null || linha.equals("sair")) {
                     println("Ate logo, " + nomeCliente + "!");
                     break;
                 }
 
-                println(processarComando(linha.trim()));
+                println(processarComando(linha));
             }
 
         } catch (IOException e) {
             System.out.println("Cliente desconectado: " + nomeCliente);
         } finally {
-            clientesConectados.remove(this); // remove da lista ao desconectar
+            clientesConectados.remove(this);
             try { socket.close(); } catch (IOException e) {}
         }
     }
 
-    // Atalho para enviar texto ao cliente via socket
+
+    private String ler() throws IOException {
+        String linha = entrada.readLine();
+        if (linha == null) return null;
+        return linha.replace("\r", "").trim();
+    }
+
     private void println(String texto) {
         saida.println(texto);
     }
@@ -72,9 +79,9 @@ public class ManipuladorCliente implements Runnable {
 
     // Avisa todos os outros clientes conectados sobre um novo lance
     private void notificarTodos(String mensagem) {
-        for (ManipuladorCliente outro : clientesConectados) {
-            if (outro != this) { // nao notifica quem deu o lance
-                outro.notificar(mensagem);
+        for (ManipuladorCliente outroCliente : clientesConectados) {
+            if (outroCliente != this) {
+                outroCliente.notificar(mensagem);
             }
         }
     }
@@ -102,7 +109,6 @@ public class ManipuladorCliente implements Runnable {
         saida.flush();
     }
 
-    // Exibe o resultado final quando todos os leiloes encerrarem
     private void mostrarResultadoFinal() {
         println("");
         println("==================================");
@@ -121,11 +127,9 @@ public class ManipuladorCliente implements Runnable {
                     println("  > " + lance);
                 }
             }
-            println("----------------------------------");
         }
         println("");
         println("Obrigado, " + nomeCliente + "!");
-        println("==================================");
     }
 
     // Interpreta o comando digitado pelo cliente e retorna a resposta
@@ -148,12 +152,11 @@ public class ManipuladorCliente implements Runnable {
                 double valor = Double.parseDouble(partes[2]);
                 Leilao leilao = buscarLeilao(id);
 
-                if (leilao == null) return "Leilao #" + id + " nao encontrado.";
-                if (!leilao.estaAtivo()) return "Este leilao ja foi encerrado.";
+                if (leilao == null) return "Leilao #" + id + " não encontrado.";
+                if (!leilao.estaAtivo()) return "Este leilão ja foi encerrado.";
 
                 if (leilao.darLance(nomeCliente, valor)) {
-                    // Notifica todos os outros clientes sobre o novo lance
-                    notificarTodos(nomeCliente + " lancou R$ " + valor + " no item #" + id + " (" + leilao.item + ")");
+                    notificarTodos(nomeCliente + " lançou R$ " + valor + " no item #" + id + " (" + leilao.item + ")");
                     return "Lance aceito! Voce lidera com R$ " + valor;
                 } else {
                     return "Lance recusado. Lance minimo: R$ " + (leilao.maiorLance + 0.01);
