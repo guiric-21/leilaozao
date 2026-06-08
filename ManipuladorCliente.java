@@ -2,8 +2,6 @@ import java.io.*;
 import java.net.Socket;
 import java.util.List;
 
-// Responsavel por conversar com um cliente conectado
-// Roda em uma thread separada para cada cliente (permite multiplos simultaneos), Transparência de Localização pois o usuario não sabe quantas threads estão rodando
 public class ManipuladorCliente implements Runnable {
 
     Socket socket;
@@ -33,7 +31,6 @@ public class ManipuladorCliente implements Runnable {
 
             println("Ola, " + nomeCliente + "!");
 
-            // Loop principal: exibe menu e processa comandos ate todos leiloes encerrarem
             while (true) {
                 if (!algumLeilaoAtivo()) {
                     mostrarResultadoFinal();
@@ -70,14 +67,12 @@ public class ManipuladorCliente implements Runnable {
         saida.println(texto);
     }
 
-    // Envia uma notificacao para este cliente (chamado por outros clientes)
     public void notificar(String mensagem) {
-        saida.println("\n[NOVO LANCE] " + mensagem);
+        saida.println("\nLance Dado por " + mensagem);
         saida.print("> ");
         saida.flush();
     }
 
-    // Avisa todos os outros clientes conectados sobre um novo lance
     private void notificarTodos(String mensagem) {
         for (ManipuladorCliente outroCliente : clientesConectados) {
             if (outroCliente != this) {
@@ -86,7 +81,6 @@ public class ManipuladorCliente implements Runnable {
         }
     }
 
-    // Exibe o menu com os leiloes disponiveis
     private void mostrarMenu() {
         println("");
         println("==================================");
@@ -132,7 +126,6 @@ public class ManipuladorCliente implements Runnable {
         println("Obrigado, " + nomeCliente + "!");
     }
 
-    // Interpreta o comando digitado pelo cliente e retorna a resposta
     private String processarComando(String comando) {
         if (comando.startsWith("status ")) {
             try {

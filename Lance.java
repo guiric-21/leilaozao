@@ -1,4 +1,3 @@
-// Um lance feito por um participante no leilao
 public class Lance {
     String nomeParticipante;
     double valor;

@@ -20,23 +20,21 @@ public class Servidor {
         leiloes.add(new Leilao(2, "iPhone 15", 3000.0));
         leiloes.add(new Leilao(3, "Camera Canon", 2500.0));
         leiloes.add(new Leilao(4, "Camisa do Sport Club Recife", 400));
+        leiloes.add(new Leilao(5, "Óculos", 80));
 
 
-        List<ManipuladorCliente> clientesConectados = new CopyOnWriteArrayList<>(); //O CopyOnWriteArrayList Permite ler entrada e saida de clientes
-
-        // Pool de threads: atende ate 10 clientes ao mesmo tempo = concorrência
+        List<ManipuladorCliente> clientesConectados = new CopyOnWriteArrayList<>(); //thread safe
         ExecutorService pool = Executors.newFixedThreadPool(MAX_CLIENTES);
 
         ServerSocket servidor = new ServerSocket(PORTA);
         System.out.println("Servidor iniciado na porta " + PORTA);
         System.out.println(leiloes.size() + " leiloes disponiveis. Aguardando clientes...");
 
-        // Disponibilidade = O server fica aberto esperando clientes
         while (true) {
             Socket clienteSocket = servidor.accept();
             System.out.println("Novo cliente: " + clienteSocket.getInetAddress());
 
-            // Passa a lista de clientes conectados para que possa notificar todos
+            // Passa a lista de clientes conectados pra notificar todo mundo
             ManipuladorCliente manipulador = new ManipuladorCliente(clienteSocket, leiloes, clientesConectados);
             clientesConectados.add(manipulador);
             pool.execute(manipulador);

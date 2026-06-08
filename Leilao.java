@@ -38,7 +38,6 @@ public class Leilao {
         return true;
     }
 
-    // Retorna um resumo do leilao em texto, o synchronized não permite modificação ao msm tempo, conciliando os clientes = Concorrencia
     public synchronized String status() {
         long seg = (tempoFim - System.currentTimeMillis()) / 1000;
         if (seg < 0) seg = 0;
